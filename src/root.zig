@@ -1,6 +1,10 @@
 //! By convention, root.zig is the root source file when making a library.
 const std = @import("std");
 
+const validationFormats = enum {
+    digits,
+};
+
 // in args, i'd rather support something like ?anytype but that ain't possible
 pub fn bufferedPrint(comptime bytes: []const u8, args: anytype) !void {
     // Stdout is for the actual output of your application, for example if you
@@ -24,6 +28,23 @@ pub fn bufferedRead(stdin_buffer: []u8, allocator: std.mem.Allocator) ![]u8 {
     return output_read;
 }
 
+pub fn validateInput(inputToValidate: []const u8, receivedValidationFormat: []const u8) !bool {
+    var valid = true;
+    const usableValidationFormat = std.meta.stringToEnum(validationFormats, receivedValidationFormat) orelse {
+        return error.invalidChoice;
+    };
+    switch (usableValidationFormat) {
+        .digits => {
+            for (inputToValidate) |character| {
+                if (!std.ascii.isDigit(character)) {
+                    valid = false;
+                    break;
+                }
+            }
+        },
+    }
+    return valid;
+}
 pub fn add(a: i32, b: i32) i32 {
     return a + b;
 }

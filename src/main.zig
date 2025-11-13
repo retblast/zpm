@@ -25,7 +25,7 @@ pub fn main() !void {
         // This creates a value that holds an array of size 1 of the index value
         // there's probably a better way to handle this
         //const indexStr = [1]u8{@as(u8, index)};
-        try zpm.bufferedPrint(message, .{});
+        try zpm.bufferedPrint(message ++ "\n", .{});
     }
     var passphraseLength: []u8 = undefined;
     var typoificationRead: []u8 = undefined;
@@ -41,6 +41,7 @@ pub fn main() !void {
         "How many words long should the passphrase be?",
         "Requested length: ",
         "Do you want to typoify some words of the passphrase? Currently, there's a 50% chance for a word in the passphrase to be typoified.",
+        "Typoificate?: ",
     };
 
     inline for (setupMessages, 0..) |message, index| {
@@ -51,18 +52,26 @@ pub fn main() !void {
         try zpm.bufferedPrint(message, .{});
         switch (index) {
             1 => {
-                var anotherBuffer: [1024]u8 = undefined;
-                passphraseLength = try zpm.bufferedRead(&anotherBuffer, gpa);
+                var validPassphrase = false;
+                while (!validPassphrase) {
+                    passphraseLength = try zpm.bufferedRead(&stdin_buffer, gpa);
+                    validPassphrase = try zpm.validateInput(passphraseLength, "digits");
+                    if (!validPassphrase) {
+                        try zpm.bufferedPrint("error: A number wasn't entered. Please try again.\n", .{});
+                        // Have to free the previously used memory otherwise we have a leak
+                        defer gpa.free(passphraseLength);
+                        try zpm.bufferedPrint(setupMessages[1], .{});
+                    }
+                }
             },
-            2 => {
+            3 => {
                 typoificationRead = try zpm.bufferedRead(&stdin_buffer, gpa);
                 //if (typoificationRead[0] == 'Y') {
                 //    typoification = true;
                 //}
             },
-            else => try zpm.bufferedPrint("oops", .{}),
+            else => try zpm.bufferedPrint("\n", .{}),
         }
-        try zpm.bufferedPrint("\n", .{});
     }
 
     // const finalConfigMessages = .{
